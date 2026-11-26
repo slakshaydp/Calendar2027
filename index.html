@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -337,7 +338,7 @@
   <div id="bg-wash-layer"></div>
 
   <!-- Ambient Floating Hearts / Petals Canvas -->
-  <canvas id="ambient-canvas" class="no-print fixed inset-0 pointer-events-none z-0"></canvas>
+  <canvas id="ambient-canvas" class="no-print fixed inset-0 pointer-events-none z-20"></canvas>
 
   <!-- Celebration Confetti & Hearts Canvas -->
   <canvas id="confetti-canvas" class="no-print fixed inset-0 pointer-events-none z-50"></canvas>
@@ -427,8 +428,8 @@
 
         <div class="flex items-center justify-between">
           <span class="font-semibold text-stone-700">Floating Hearts &amp; Petals</span>
-          <button id="toggle-ambient" type="button" role="switch" aria-checked="false" class="relative inline-flex h-5 w-9 items-center rounded-full bg-stone-300 transition-colors cursor-pointer">
-            <span id="toggle-ambient-knob" class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform translate-x-1"></span>
+          <button id="toggle-ambient" type="button" role="switch" aria-checked="true" class="relative inline-flex h-5 w-9 items-center rounded-full bg-rose-500 transition-colors cursor-pointer">
+            <span id="toggle-ambient-knob" class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform translate-x-4"></span>
           </button>
         </div>
       </div>
@@ -678,13 +679,13 @@
     const YEAR = 2027;
     const DRIVE_FILE_ID = '17nAgMwqgt4UGjUdhvaOskeOZEMyLXUiD';
     const DRIVE_FALLBACK_URLS = [
-      `https://drive.google.com/thumbnail?id=${DRIVE_FILE_ID}&sz=w2000`,
-      `https://lh3.googleusercontent.com/d/${DRIVE_FILE_ID}=w2000`,
-      `https://drive.google.com/uc?export=view&id=${DRIVE_FILE_ID}`
+      `https://lh3.googleusercontent.com/d/${DRIVE_FILE_ID}`,
+      `https://drive.google.com/uc?export=view&id=${DRIVE_FILE_ID}`,
+      `https://drive.google.com/thumbnail?id=${DRIVE_FILE_ID}&sz=w2000`
     ];
 
-    // Fresh settings key guarantees glassGlossiness: 10 default while preserving user data
-    const SETTINGS_KEY = 'coupleCal2027_settings_v3';
+    // Fresh settings key guarantees glassGlossiness: 10 & ambientParticles: true defaults while preserving user data
+    const SETTINGS_KEY = 'coupleCal2027_settings_v4';
     const USER_DATA_KEY = 'coupleCal2027_userData_v1';
     const LEGACY_STATE_KEY = 'couple_cal_2027_v3_state';
 
@@ -785,7 +786,7 @@
       viewMode: 'year',            // 'year' | 'month'
       focusMonth: 2,               // 0 - 11
       showCountdown: true,
-      ambientParticles: false
+      ambientParticles: true
     };
 
     // User Data (persisted under USER_DATA_KEY)
@@ -868,7 +869,7 @@
 
     function loadStorage() {
       try {
-        // Load settings from fresh v3 key (guarantees glassGlossiness: 10 default)
+        // Load settings from fresh v4 key (guarantees glassGlossiness: 10 & ambientParticles: true defaults)
         const rawSettings = localStorage.getItem(SETTINGS_KEY);
         if (rawSettings) {
           settings = { ...settings, ...JSON.parse(rawSettings) };
@@ -2028,3 +2029,4 @@
   </script>
 </body>
 </html>
+```

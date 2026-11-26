@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2027 Interactive Couple Calendar</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Default 10% Ultra-Clear Airy Glassmorphism */
+      --glass-blur: 4px;
+      --glass-sat: 125%;
+      --glass-g1: 0.22;
+      --glass-g2: 0.14;
+      --glass-g3: 0.18;
+      --glass-border: 0.34;
+      --glass-inset-top: 0.45;
+      --glass-inset-bot: 0.12;
+      --wash-opacity: 0.05;
+      --photo-pos: center top;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #fdf6ec;
+      color: #1c1917;
+      min-height: 100vh;
+      overflow-x: hidden;
+      margin: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Soft Pastel Cream & Blush Watercolor Fallback Canvas */
+    .watercolor-fallback {
+      background-color: #fdf6ec;
+      background-image:
+        radial-gradient(circle at 12% 16%, rgba(244, 182, 204, 0.55) 0%, transparent 46%),
+        radial-gradient(circle at 88% 12%, rgba(216, 190, 240, 0.50) 0%, transparent 46%),
+        radial-gradient(circle at 82% 80%, rgba(248, 200, 214, 0.48) 0%, transparent 50%),
+        radial-gradient(circle at 16% 84%, rgba(224, 200, 244, 0.44) 0%, transparent 48%);
+    }
+
+    /* Responsive Desktop Container up to 1440px */
+    .app-container {
+      width: min(94vw, 1440px);
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Full-Year Responsive Grid */
+    .year-calendar-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 520px) {
+      .year-calendar-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+    }
+    @media (min-width: 768px) {
+      .year-calendar-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+    }
+    @media (min-width: 1120px) {
+      .year-calendar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 20px;
+      }
+    }
+
+    /* Strict 7-Column Monthly Focus Grid (Zero Overflow on Mobile & Desktop) */
+    .month-grid-7 {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 4px;
+      width: 100%;
+    }
+    @media (min-width: 768px) {
+      .month-grid-7 {
+        gap: 8px;
+      }
+    }
+
+    .month-day-cell {
+      min-width: 0;
+      min-height: 56px;
+      overflow: hidden;
+    }
+    @media (min-width: 768px) {
+      .month-day-cell {
+        min-height: 98px;
+      }
+    }
+
+    /* Hide scrollbar on mobile horizontal month pill bar */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Full-Screen Photo Background Layer */
+    #bg-fullscreen-wrap {
+      position: fixed;
+      inset: 0;
+      z-index: -30;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    #bg-photo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: var(--photo-pos);
+      transition: object-position 0.3s ease, opacity 0.6s ease;
+    }
+
+    /* Subtle Translucent Wash Over Full-Screen Photo */
+    #bg-wash-layer {
+      position: fixed;
+      inset: 0;
+      z-index: -20;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        rgba(253, 246, 236, var(--wash-opacity)) 0%,
+        rgba(252, 241, 244, calc(var(--wash-opacity) + 0.04)) 55%,
+        rgba(249, 241, 248, calc(var(--wash-opacity) + 0.07)) 100%
+      );
+      transition: background 0.25s ease;
+    }
+
+    /* Poster Top Feathered Blend */
+    .poster-mask {
+      -webkit-mask-image: linear-gradient(to bottom, black 64%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 64%, transparent 100%);
+    }
+
+    /* Adaptive Liquid Glass Surface (Scales cleanly from 10% airy to 100% glossy) */
+    .liquid-glass {
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, var(--glass-g1)) 0%,
+        rgba(255, 255, 255, var(--glass-g2)) 50%,
+        rgba(255, 255, 255, var(--glass-g3)) 100%
+      );
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+      border: 1px solid rgba(255, 255, 255, var(--glass-border));
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, var(--glass-inset-top)),
+        inset 0 -1px 1px rgba(255, 255, 255, var(--glass-inset-bot)),
+        0 10px 28px -10px rgba(52, 30, 42, 0.18),
+        0 2px 8px rgba(52, 30, 42, 0.05);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .liquid-glass-card:hover {
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.75),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.25),
+        0 16px 36px -10px rgba(52, 30, 42, 0.24),
+        0 4px 12px rgba(52, 30, 42, 0.07);
+    }
+
+    /* Razor-sharp, clean typography with ZERO white glow, halo, or text-shadow */
+    .crisp-text,
+    h1, h2, h3,
+    #calendar-grid button,
+    #focus-days-grid button,
+    #bottom-legend {
+      text-shadow: none !important;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Higher-Legibility Glossy Panel for Modals, Popover & Drawer */
+    .liquid-glass-panel {
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.88) 0%,
+        rgba(255, 250, 252, 0.76) 52%,
+        rgba(255, 255, 255, 0.84) 100%
+      );
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.95),
+        inset 0 -1px 1px rgba(255, 255, 255, 0.35),
+        0 24px 54px -12px rgba(54, 30, 44, 0.30);
+    }
+
+    /* Ultra-Small Discreet 26px x 26px Floating Settings Button */
+    #settings-fab {
+      width: 26px;
+      height: 26px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.34) 100%);
+      backdrop-filter: blur(14px) saturate(170%);
+      -webkit-backdrop-filter: blur(14px) saturate(170%);
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.9),
+        0 3px 10px rgba(64, 38, 52, 0.18);
+      opacity: 0.5;
+      transition: opacity 0.2s ease, transform 0.25s ease, box-shadow 0.2s ease;
+    }
+
+    #settings-fab:hover,
+    #settings-fab:focus-visible,
+    #settings-fab[aria-expanded="true"] {
+      opacity: 1;
+      transform: scale(1.08);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.95),
+        0 5px 14px rgba(64, 38, 52, 0.26);
+    }
+
+    #settings-fab[aria-expanded="true"] svg {
+      transform: rotate(65deg);
+    }
+
+    /* Milestone Date Highlights */
+    .milestone-anniversary {
+      background: linear-gradient(135deg, rgba(255, 241, 235, 0.92) 0%, rgba(253, 226, 228, 0.92) 100%);
+      border: 1.5px solid #d9777f;
+      box-shadow: 0 0 12px rgba(217, 119, 127, 0.45);
+    }
+
+    .milestone-her-bday {
+      background: linear-gradient(135deg, rgba(255, 240, 247, 0.92) 0%, rgba(251, 207, 232, 0.92) 100%);
+      border: 1.5px solid #ec4899;
+      box-shadow: 0 0 12px rgba(236, 72, 153, 0.40);
+    }
+
+    .milestone-his-bday {
+      background: linear-gradient(135deg, rgba(239, 246, 255, 0.92) 0%, rgba(186, 230, 253, 0.92) 100%);
+      border: 1.5px solid #0284c7;
+      box-shadow: 0 0 12px rgba(2, 132, 199, 0.36);
+    }
+
+    .milestone-custom {
+      background: linear-gradient(135deg, rgba(245, 243, 255, 0.92) 0%, rgba(233, 213, 255, 0.92) 100%);
+      border: 1.5px solid #9333ea;
+      box-shadow: 0 0 12px rgba(147, 51, 234, 0.34);
+    }
+
+    @keyframes pulseRing {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 119, 138, 0.8); }
+      50% { transform: scale(1.12); box-shadow: 0 0 0 10px rgba(217, 119, 138, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 119, 138, 0); }
+    }
+
+    .date-pulse {
+      animation: pulseRing 0.85s ease-in-out 2;
+      z-index: 20;
+    }
+
+    input[type="range"] {
+      accent-color: #c25174;
+    }
+
+    /* Print / PDF Export */
+    @media print {
+      body {
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .no-print {
+        display: none !important;
+      }
+      #bg-fullscreen-wrap,
+      #bg-wash-layer {
+        position: fixed !important;
+      }
+      .liquid-glass {
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+        border: 1px solid #e6d8d2 !important;
+        break-inside: avoid;
+      }
+      .year-calendar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+      }
+      #poster-top-section {
+        max-height: 250px !important;
+      }
+    }
+  </style>
+</head>
+<body class="watercolor-fallback relative selection:bg-pink-200 selection:text-rose-950">
+
+  <!-- Full-Screen Background Image & Soft Wash Overlay -->
+  <div id="bg-fullscreen-wrap">
+    <img id="bg-photo-img" referrerpolicy="no-referrer" alt="Couple Background Portrait" class="opacity-0" />
+  </div>
+  <div id="bg-wash-layer"></div>
+
+  <!-- Ambient Floating Hearts / Petals Canvas -->
+  <canvas id="ambient-canvas" class="no-print fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- Celebration Confetti & Hearts Canvas -->
+  <canvas id="confetti-canvas" class="no-print fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <!-- Hidden File Inputs for Custom Photo & JSON Restore -->
+  <input type="file" id="photo-upload-input" accept="image/*" class="hidden" />
+  <input type="file" id="json-import-input" accept="application/json,.json" class="hidden" />
+
+  <!-- ULTRA-SMALL 26px x 26px FLOATING SETTINGS BUTTON (Top-Right) -->
+  <button
+    id="settings-fab"
+    type="button"
+    aria-label="Calendar Settings"
+    aria-expanded="false"
+    aria-controls="settings-popover"
+    class="no-print fixed top-3 right-3 z-40 rounded-full flex items-center justify-center text-stone-800 hover:text-rose-700 cursor-pointer focus:outline-none"
+    title="Settings"
+  >
+    <svg class="w-3.5 h-3.5 transition-transform duration-300" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  </button>
+
+  <!-- COMPACT GLOSSY SETTINGS POPOVER -->
+  <aside
+    id="settings-popover"
+    class="no-print hidden fixed top-11 right-3 z-40 w-72 sm:w-80 max-h-[84vh] overflow-y-auto liquid-glass-panel rounded-2xl p-4 text-stone-800 origin-top-right"
+    role="dialog"
+    aria-label="Calendar Settings"
+  >
+    <div class="flex items-center justify-between pb-2 mb-3 border-b border-rose-200/60">
+      <h2 class="font-serif text-base font-bold text-stone-900">Calendar Settings</h2>
+      <button id="btn-close-popover" type="button" class="p-1 rounded-lg hover:bg-rose-100/70 text-stone-500 hover:text-stone-800 transition" aria-label="Close settings">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="space-y-3 text-xs">
+      <!-- 1. View Mode -->
+      <div>
+        <span class="block font-semibold text-stone-600 mb-1">Calendar View</span>
+        <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-purple-100/60 border border-purple-200/50">
+          <button id="view-year" type="button" class="py-1.5 rounded-lg font-semibold transition">Full Year</button>
+          <button id="view-month" type="button" class="py-1.5 rounded-lg font-semibold transition">Month Focus</button>
+        </div>
+      </div>
+
+      <!-- 2. Background Mode -->
+      <div>
+        <span class="block font-semibold text-stone-600 mb-1">Background Mode</span>
+        <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-rose-100/60 border border-rose-200/50">
+          <button id="mode-fullscreen" type="button" class="py-1.5 rounded-lg font-semibold transition">Full-Screen</button>
+          <button id="mode-poster" type="button" class="py-1.5 rounded-lg font-semibold transition">Poster Top</button>
+        </div>
+      </div>
+
+      <!-- 3. Glass Glossiness Slider (Default 10%, Range 10% - 100%) -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="gloss-slider" class="font-semibold text-stone-600">Glass Glossiness</label>
+          <span id="gloss-value-label" class="font-bold text-rose-700">10%</span>
+        </div>
+        <input id="gloss-slider" type="range" min="10" max="100" value="10" class="w-full h-1.5 cursor-pointer" />
+      </div>
+
+      <!-- 4. Photo Fit Framing -->
+      <div>
+        <span class="block font-semibold text-stone-600 mb-1">Photo Fit</span>
+        <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-stone-100/80 border border-stone-200/70">
+          <button data-pos="center top" class="pos-btn py-1.5 rounded-lg font-semibold transition">Top</button>
+          <button data-pos="center center" class="pos-btn py-1.5 rounded-lg font-semibold transition">Center</button>
+          <button data-pos="center bottom" class="pos-btn py-1.5 rounded-lg font-semibold transition">Bottom</button>
+        </div>
+      </div>
+
+      <!-- 5. Interactive Toggles -->
+      <div class="space-y-2 pt-1">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-stone-700">Show Milestone Countdowns</span>
+          <button id="toggle-countdown" type="button" role="switch" aria-checked="true" class="relative inline-flex h-5 w-9 items-center rounded-full bg-rose-500 transition-colors cursor-pointer">
+            <span id="toggle-countdown-knob" class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform translate-x-4"></span>
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-stone-700">Floating Hearts &amp; Petals</span>
+          <button id="toggle-ambient" type="button" role="switch" aria-checked="false" class="relative inline-flex h-5 w-9 items-center rounded-full bg-stone-300 transition-colors cursor-pointer">
+            <span id="toggle-ambient-knob" class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform translate-x-1"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 6. All Notes & Events Directory Button -->
+      <div class="pt-2 border-t border-rose-200/60">
+        <button id="btn-open-directory" type="button" class="w-full py-2 px-3 rounded-xl bg-white/90 hover:bg-rose-50 text-stone-800 border border-rose-200/80 font-semibold flex items-center justify-center gap-2 transition active:scale-95">
+          <span>📖</span>
+          <span>All Notes &amp; Events</span>
+        </button>
+      </div>
+
+      <!-- 7. Photo Upload & Reset -->
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-change-photo" type="button" class="py-2 px-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-semibold shadow-sm transition active:scale-95">
+          Change Photo
+        </button>
+        <button id="btn-reset-photo" type="button" class="py-2 px-2.5 rounded-xl bg-white/90 hover:bg-rose-50 text-stone-700 border border-stone-200 font-semibold transition active:scale-95">
+          Reset Default
+        </button>
+      </div>
+
+      <!-- 8. Export / Import Backup (JSON) -->
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-export-json" type="button" class="py-1.5 px-2 rounded-xl bg-white/85 hover:bg-purple-50 text-stone-700 border border-purple-200/70 font-semibold transition active:scale-95">
+          Export JSON
+        </button>
+        <button id="btn-import-json" type="button" class="py-1.5 px-2 rounded-xl bg-white/85 hover:bg-purple-50 text-stone-700 border border-purple-200/70 font-semibold transition active:scale-95">
+          Import JSON
+        </button>
+      </div>
+
+      <!-- 9. Print / Save PDF -->
+      <button id="btn-print" type="button" class="w-full py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-semibold flex items-center justify-center gap-2 transition active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        <span>Print / Save PDF</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CLEAN CALENDAR CANVAS (Up to 1440px Desktop Container) -->
+  <main class="app-container relative z-10 pt-5 sm:pt-7 pb-10">
+
+    <!-- Poster Top Portrait Container (Active in Poster Top Mode) -->
+    <section id="poster-top-section" class="hidden mb-2">
+      <div class="relative max-w-3xl mx-auto h-72 sm:h-96 md:h-[27rem] rounded-3xl overflow-hidden poster-mask">
+        <img id="poster-photo-img" referrerpolicy="no-referrer" alt="Couple Portrait" class="w-full h-full object-cover transition-all duration-300" />
+      </div>
+    </section>
+
+    <!-- Glossy Serif 2027 Header Pill + Optional Next Special Day Countdown -->
+    <header class="flex flex-col items-center justify-center mb-5 sm:mb-7 gap-2.5">
+      <div class="liquid-glass rounded-full px-8 sm:px-12 py-2 sm:py-2.5">
+        <h1 class="font-serif text-5xl sm:text-6xl md:text-7xl font-semibold tracking-[0.1em] text-[#1c1917] crisp-text leading-none">
+          2027
+        </h1>
+      </div>
+
+      <!-- Next Special Day Live Countdown Pill -->
+      <div id="next-countdown-wrap" class="flex justify-center"></div>
+    </header>
+
+    <!-- FULL-YEAR VIEW (12-Month Responsive Grid: 4x3 Desktop, 3x4 Tablet, 2x6 Small Tablet, 1x12 Mobile) -->
+    <section id="full-year-view">
+      <div id="calendar-grid" class="year-calendar-grid">
+        <!-- 12 Month Cards generated dynamically -->
+      </div>
+    </section>
+
+    <!-- FIXED MONTHLY FOCUS VIEW (Rock-Solid on Both Desktop & Mobile) -->
+    <section id="month-focus-view" class="hidden w-full max-w-[980px] mx-auto">
+      <div class="liquid-glass rounded-3xl p-3 sm:p-6 md:p-7">
+
+        <!-- Header Controls: Prev, Title, Next, Back to Full Year -->
+        <div class="flex items-center justify-between gap-2 mb-3.5">
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <button id="btn-prev-month" type="button" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/75 hover:bg-white border border-white/80 text-stone-800 shadow-sm flex items-center justify-center text-lg font-bold transition active:scale-95 cursor-pointer" aria-label="Previous Month" title="Previous Month (Left Arrow)">
+              &lsaquo;
+            </button>
+            <button id="btn-next-month" type="button" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/75 hover:bg-white border border-white/80 text-stone-800 shadow-sm flex items-center justify-center text-lg font-bold transition active:scale-95 cursor-pointer" aria-label="Next Month" title="Next Month (Right Arrow)">
+              &rsaquo;
+            </button>
+          </div>
+
+          <h2 id="focus-month-title" class="font-serif text-xl sm:text-3xl md:text-4xl font-bold text-[#1c1917] crisp-text tracking-wide text-center truncate px-1">
+            January 2027
+          </h2>
+
+          <button id="btn-back-year" type="button" class="px-2.5 sm:px-3.5 py-2 rounded-xl bg-white/80 hover:bg-white border border-white/85 text-[#1c1917] text-xs font-semibold shadow-sm transition active:scale-95 cursor-pointer whitespace-nowrap">
+            Full Year
+          </button>
+        </div>
+
+        <!-- 12-Month Quick-Jump Pill Bar (Horizontally Scrollable on Mobile, Centered Wrap on Desktop) -->
+        <div id="focus-month-pills" class="flex md:flex-wrap md:justify-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-3.5"></div>
+
+        <!-- Strict 7-Column Weekday Headers (SUN to SAT) -->
+        <div class="month-grid-7 mb-1.5 text-center">
+          <div class="py-1 text-[11px] sm:text-xs font-bold text-[#c81e3a] crisp-text uppercase">SUN</div>
+          <div class="py-1 text-[11px] sm:text-xs font-bold text-[#1c1917] crisp-text uppercase">MON</div>
+          <div class="py-1 text-[11px] sm:text-xs font-bold text-[#1c1917] crisp-text uppercase">TUE</div>
+          <div class="py-1 text-[11px] sm:text-xs font-bold text-[#1c1917] crisp-text uppercase">WED</div>
+          <div class="py-1 text-[11px] sm:text-xs font-bold text-[#1c1917] crisp-text uppercase">THU</div>
+          <div class="py-1 text-[11px] sm:text-xs font-bold text-[#1c1917] crisp-text uppercase">FRI</div>
+          <div class="py-1 text-[11px] sm:text-xs font-bold text-[#1c1917] crisp-text uppercase">SAT</div>
+        </div>
+
+        <!-- Strict 7-Column Month Focus Day Cells -->
+        <div id="focus-days-grid" class="month-grid-7"></div>
+
+        <!-- Mobile-Friendly Highlights & Notes List Below Grid (Visible on Mobile, Hidden on Desktop where cells show details) -->
+        <div id="mobile-month-highlights" class="md:hidden mt-4 pt-3.5 border-t border-white/60">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE GLOSSY BOTTOM LEGEND -->
+    <footer class="mt-7 sm:mt-8 flex justify-center">
+      <div id="bottom-legend" class="liquid-glass rounded-3xl sm:rounded-full px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-xs sm:text-sm font-semibold text-stone-900 crisp-text">
+        <!-- Populated dynamically with default + custom milestones -->
+      </div>
+    </footer>
+  </main>
+
+  <!-- INTERACTIVE DATE DETAIL MODAL -->
+  <div id="date-modal" class="no-print fixed inset-0 z-50 hidden items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm">
+    <div class="liquid-glass-panel w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl p-5 sm:p-6 relative">
+      <button id="btn-close-modal" type="button" class="absolute top-4 right-4 p-1.5 rounded-full hover:bg-rose-100/80 text-stone-500 hover:text-stone-900 transition" aria-label="Close modal">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Formatted Date & Live Countdown -->
+      <div class="pr-8">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span id="modal-weekday" class="text-xs font-bold uppercase tracking-widest text-rose-600">Thursday</span>
+          <span id="modal-countdown-badge" class="px-2.5 py-0.5 rounded-full bg-white/80 border border-rose-200/70 text-stone-700 text-[11px] font-semibold"></span>
+        </div>
+        <h3 id="modal-date-title" class="font-serif text-2xl sm:text-3xl font-bold text-stone-900 mt-1">March 18, 2027</h3>
+      </div>
+
+      <!-- Milestone / Holiday / Sunday Badges -->
+      <div id="modal-badges" class="mt-3.5 space-y-2"></div>
+
+      <!-- Quick Sticker / Mood Tag Picker -->
+      <div class="mt-4 pt-3.5 border-t border-rose-200/60">
+        <span class="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-2">Quick Sticker / Tag</span>
+        <div id="sticker-picker" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <!-- Personal Note (Auto-saved locally) -->
+      <div class="mt-4 pt-3.5 border-t border-rose-200/60">
+        <div class="flex items-center justify-between mb-1.5">
+          <label for="modal-note-input" class="text-[11px] font-bold uppercase tracking-wider text-stone-600">Personal Note</label>
+          <span class="text-[10px] text-stone-500 font-medium">Auto-saves locally</span>
+        </div>
+        <textarea
+          id="modal-note-input"
+          rows="3"
+          placeholder="Write a memory, plan, or reminder for this date..."
+          class="w-full rounded-2xl bg-white/85 border border-rose-200/80 focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none p-3 text-sm text-stone-800 placeholder:text-stone-400 resize-none transition"
+        ></textarea>
+      </div>
+
+      <!-- Pin as Custom Milestone Section -->
+      <div id="custom-milestone-section" class="mt-4 pt-3.5 border-t border-rose-200/60">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-purple-700">Pin Custom Milestone</span>
+          <button id="btn-remove-milestone" type="button" class="hidden text-[11px] font-semibold text-red-600 hover:underline cursor-pointer">
+            Unpin
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <input
+            id="milestone-emoji-input"
+            type="text"
+            maxlength="4"
+            placeholder="💖"
+            class="w-14 text-center rounded-xl bg-white/85 border border-purple-200 focus:border-purple-400 focus:outline-none py-2 text-base"
+            title="Milestone Emoji"
+          />
+          <input
+            id="milestone-title-input"
+            type="text"
+            maxlength="36"
+            placeholder="e.g., First Trip, Engagement..."
+            class="flex-1 rounded-xl bg-white/85 border border-purple-200 focus:border-purple-400 focus:outline-none px-3 py-2 text-xs font-medium text-stone-800"
+          />
+          <button id="btn-save-milestone" type="button" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-semibold shadow-sm transition active:scale-95">
+            Pin
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOSSY EVENTS & NOTES DIRECTORY DRAWER -->
+  <div id="directory-drawer-backdrop" class="no-print fixed inset-0 z-50 hidden bg-stone-900/35 backdrop-blur-sm">
+    <aside class="liquid-glass-panel fixed top-0 right-0 h-full w-full max-w-sm p-5 flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-rose-200/60">
+        <h2 class="font-serif text-xl font-bold text-stone-900">All Notes &amp; Events</h2>
+        <button id="btn-close-directory" type="button" class="p-1.5 rounded-full hover:bg-rose-100/80 text-stone-600 hover:text-stone-900 transition" aria-label="Close directory">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="mt-3">
+        <input
+          id="directory-search"
+          type="search"
+          placeholder="Search notes, milestones, holidays..."
+          class="w-full rounded-xl bg-white/85 border border-rose-200/80 focus:border-rose-400 focus:outline-none px-3.5 py-2 text-xs text-stone-800"
+        />
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="grid grid-cols-4 gap-1 p-1 mt-2.5 rounded-xl bg-rose-100/60 text-[11px] font-semibold">
+        <button data-filter="all" class="dir-filter-btn py-1.5 rounded-lg bg-white text-rose-900 shadow-sm">All</button>
+        <button data-filter="milestones" class="dir-filter-btn py-1.5 rounded-lg text-stone-600">Special</button>
+        <button data-filter="notes" class="dir-filter-btn py-1.5 rounded-lg text-stone-600">Notes</button>
+        <button data-filter="holidays" class="dir-filter-btn py-1.5 rounded-lg text-stone-600">Holidays</button>
+      </div>
+
+      <!-- Scrollable List -->
+      <div id="directory-list" class="mt-3 flex-1 overflow-y-auto space-y-2 pr-1"></div>
+    </aside>
+  </div>
+
+  <!-- Subtle "Saved locally" Toast Indicator -->
+  <div id="toast" class="no-print fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-300">
+    <div id="toast-message" class="px-3.5 py-1.5 rounded-full bg-stone-900/85 text-white text-[11px] font-semibold shadow-lg backdrop-blur-md">
+      Saved locally
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. CONSTANTS, GOOGLE DRIVE FALLBACK CHAIN & 2027 DATA
+       ========================================================================= */
+    const YEAR = 2027;
+    const DRIVE_FILE_ID = '17nAgMwqgt4UGjUdhvaOskeOZEMyLXUiD';
+    const DRIVE_FALLBACK_URLS = [
+      `https://drive.google.com/thumbnail?id=${DRIVE_FILE_ID}&sz=w2000`,
+      `https://lh3.googleusercontent.com/d/${DRIVE_FILE_ID}=w2000`,
+      `https://drive.google.com/uc?export=view&id=${DRIVE_FILE_ID}`
+    ];
+
+    // Fresh settings key guarantees glassGlossiness: 10 default while preserving user data
+    const SETTINGS_KEY = 'coupleCal2027_settings_v3';
+    const USER_DATA_KEY = 'coupleCal2027_userData_v1';
+    const LEGACY_STATE_KEY = 'couple_cal_2027_v3_state';
+
+    const MONTH_NAMES = [
+      'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+      'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+    ];
+    const MONTH_TITLE_CASE = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const WEEKDAYS_3 = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const WEEKDAYS_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // Exact 2027 Kerala / India Public Holidays
+    const HOLIDAYS_2027 = {
+      '2027-01-02': 'Mannam Jayanthi',
+      '2027-01-26': 'Republic Day',
+      '2027-03-06': 'Maha Shivaratri',
+      '2027-03-10': 'Eid-ul-Fitr',
+      '2027-03-25': 'Maundy Thursday',
+      '2027-03-26': 'Good Friday',
+      '2027-04-14': 'Vishu / Ambedkar Jayanthi',
+      '2027-04-15': 'Vishu',
+      '2027-05-01': 'May Day',
+      '2027-05-17': 'Eid-ul-Adha',
+      '2027-06-15': 'Muharram',
+      '2027-08-02': 'Karkidaka Vavu',
+      '2027-08-14': 'Independence Day Eve / Muharram',
+      '2027-08-15': 'Independence Day',
+      '2027-08-24': 'First Onam / Sree Narayana Guru Jayanthi',
+      '2027-08-28': 'Thiruvonam',
+      '2027-09-11': 'Sreekrishna Jayanthi',
+      '2027-09-13': 'Third Onam',
+      '2027-09-14': 'Fourth Onam',
+      '2027-09-15': 'Sree Narayana Guru Samadhi',
+      '2027-09-22': 'Milad-i-Sherif',
+      '2027-10-02': 'Gandhi Jayanthi',
+      '2027-10-09': 'Mahanavami',
+      '2027-10-10': 'Vijayadashami',
+      '2027-10-28': 'Deepavali',
+      '2027-12-25': 'Christmas'
+    };
+
+    // 3 Default Special Milestones
+    const DEFAULT_MILESTONES = {
+      '2027-03-18': {
+        title: 'Our Anniversary',
+        subtitle: 'Celebrating love, laughter & forever together',
+        icon: '💍',
+        cellClass: 'milestone-anniversary',
+        textClass: 'text-rose-800',
+        bannerBg: 'bg-gradient-to-r from-rose-50 to-orange-50 border-rose-300',
+        confettiColors: ['#e11d48', '#f43f5e', '#fb7185', '#d9777f', '#fbbf24', '#fda4af'],
+        confettiShape: 'heart',
+        isDefault: true
+      },
+      '2027-03-21': {
+        title: 'Her Birthday',
+        subtitle: 'Wishing the happiest birthday to the queen of my heart!',
+        icon: '🎂',
+        cellClass: 'milestone-her-bday',
+        textClass: 'text-pink-700',
+        bannerBg: 'bg-gradient-to-r from-pink-50 to-fuchsia-50 border-pink-300',
+        confettiColors: ['#ec4899', '#f472b6', '#fbcfe8', '#c084fc', '#fbbf24'],
+        confettiShape: 'confetti',
+        isDefault: true
+      },
+      '2027-08-26': {
+        title: 'His Birthday',
+        subtitle: 'Cheers to an amazing year ahead for him!',
+        icon: '🧁',
+        cellClass: 'milestone-his-bday',
+        textClass: 'text-sky-800',
+        bannerBg: 'bg-gradient-to-r from-sky-50 to-indigo-50 border-sky-300',
+        confettiColors: ['#0284c7', '#38bdf8', '#7dd3fc', '#6366f1', '#fbbf24'],
+        confettiShape: 'confetti',
+        isDefault: true
+      }
+    };
+
+    const STICKERS = [
+      { id: '', label: 'None', emoji: '✕' },
+      { id: '❤️', label: 'Love', emoji: '❤️' },
+      { id: '✨', label: 'Special', emoji: '✨' },
+      { id: '✈️', label: 'Trip', emoji: '✈️' },
+      { id: '🍽️', label: 'Date Night', emoji: '🍽️' },
+      { id: '🎁', label: 'Gift', emoji: '🎁' },
+      { id: '📸', label: 'Memory', emoji: '📸' }
+    ];
+
+    // Settings (persisted under SETTINGS_KEY)
+    let settings = {
+      layoutMode: 'fullscreen',    // 'fullscreen' | 'poster'
+      glassGlossiness: 10,         // Default 10% (range 10 - 100)
+      photoPosition: 'center top', // 'center top' | 'center center' | 'center bottom'
+      viewMode: 'year',            // 'year' | 'month'
+      focusMonth: 2,               // 0 - 11
+      showCountdown: true,
+      ambientParticles: false
+    };
+
+    // User Data (persisted under USER_DATA_KEY)
+    let userData = {
+      customPhotoDataUrl: null,
+      notes: {},
+      stickers: {},
+      customMilestones: {}
+    };
+
+    let selectedDateKey = null;
+    let directoryFilter = 'all';
+
+    /* =========================================================================
+       2. HELPERS & LOCALSTORAGE PERSISTENCE
+       ========================================================================= */
+    function formatDateKey(y, mIndex, d) {
+      return `${y}-${String(mIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    }
+
+    function parseDateKey(key) {
+      const [y, m, d] = key.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function formatShortDate(key) {
+      const d = parseDateKey(key);
+      return `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}`;
+    }
+
+    function getDaysDiff(dateKey) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const target = parseDateKey(dateKey);
+      return Math.round((target - today) / (1000 * 60 * 60 * 24));
+    }
+
+    function getCountdownText(dateKey) {
+      const diff = getDaysDiff(dateKey);
+      if (diff > 1) return `In ${diff} days`;
+      if (diff === 1) return 'Tomorrow!';
+      if (diff === 0) return 'Today! 🎉';
+      if (diff === -1) return 'Yesterday';
+      return `${Math.abs(diff)} days ago`;
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[ch]));
+    }
+
+    function getMilestone(dateKey) {
+      if (DEFAULT_MILESTONES[dateKey]) return DEFAULT_MILESTONES[dateKey];
+      const custom = userData.customMilestones[dateKey];
+      if (custom) {
+        return {
+          title: custom.title,
+          subtitle: 'Custom pinned special day',
+          icon: custom.icon || '💖',
+          cellClass: 'milestone-custom',
+          textClass: 'text-purple-800',
+          bannerBg: 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-300',
+          confettiColors: ['#9333ea', '#c084fc', '#ec4899', '#fbbf24', '#f472b6'],
+          confettiShape: 'heart',
+          isDefault: false
+        };
+      }
+      return null;
+    }
+
+    function getAllMilestonesSorted() {
+      const merged = [];
+      Object.keys(DEFAULT_MILESTONES).forEach(k => merged.push({ key: k, ...DEFAULT_MILESTONES[k] }));
+      Object.keys(userData.customMilestones).forEach(k => {
+        if (!DEFAULT_MILESTONES[k]) merged.push({ key: k, ...getMilestone(k) });
+      });
+      return merged.sort((a, b) => a.key.localeCompare(b.key));
+    }
+
+    function loadStorage() {
+      try {
+        // Load settings from fresh v3 key (guarantees glassGlossiness: 10 default)
+        const rawSettings = localStorage.getItem(SETTINGS_KEY);
+        if (rawSettings) {
+          settings = { ...settings, ...JSON.parse(rawSettings) };
+        }
+
+        // Load user data (or migrate notes/stickers/milestones from legacy key if present)
+        const rawUserData = localStorage.getItem(USER_DATA_KEY);
+        if (rawUserData) {
+          const parsed = JSON.parse(rawUserData);
+          userData = {
+            customPhotoDataUrl: parsed.customPhotoDataUrl || null,
+            notes: parsed.notes || {},
+            stickers: parsed.stickers || {},
+            customMilestones: parsed.customMilestones || {}
+          };
+        } else {
+          const legacyRaw = localStorage.getItem(LEGACY_STATE_KEY);
+          if (legacyRaw) {
+            const legacy = JSON.parse(legacyRaw);
+            userData = {
+              customPhotoDataUrl: legacy.customPhotoDataUrl || null,
+              notes: legacy.notes || {},
+              stickers: legacy.stickers || {},
+              customMilestones: legacy.customMilestones || {}
+            };
+            localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load saved storage:', err);
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg = 'Saved locally') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').textContent = msg;
+      toast.classList.remove('opacity-0', 'translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 1700);
+    }
+
+    function persistAll(toastMsg = 'Saved locally') {
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+        if (toastMsg) showToast(toastMsg);
+      } catch (err) {
+        console.warn('localStorage quota exceeded:', err);
+        showToast('Storage full (photo too large)');
+      }
+    }
+
+    /* =========================================================================
+       3. BACKGROUND IMAGE LOADER (GOOGLE DRIVE 3-URL FALLBACK CHAIN)
+       ========================================================================= */
+    function loadDriveChain(imgEl, idx) {
+      if (idx >= DRIVE_FALLBACK_URLS.length) {
+        imgEl.classList.add('opacity-0');
+        return;
+      }
+      imgEl.onerror = () => loadDriveChain(imgEl, idx + 1);
+      imgEl.src = DRIVE_FALLBACK_URLS[idx];
+    }
+
+    function loadImageWithFallback(imgEl, customSrc) {
+      imgEl.onload = () => {
+        imgEl.classList.remove('opacity-0');
+        imgEl.classList.add('opacity-100');
+      };
+      if (customSrc) {
+        imgEl.onerror = () => loadDriveChain(imgEl, 0);
+        imgEl.src = customSrc;
+      } else {
+        loadDriveChain(imgEl, 0);
+      }
+    }
+
+    function refreshBackgroundImages() {
+      loadImageWithFallback(document.getElementById('bg-photo-img'), userData.customPhotoDataUrl);
+      loadImageWithFallback(document.getElementById('poster-photo-img'), userData.customPhotoDataUrl);
+    }
+
+    function processUploadedPhoto(file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_DIM = 1800;
+          let { width, height } = img;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            const scale = MAX_DIM / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const c = document.createElement('canvas');
+          c.width = width;
+          c.height = height;
+          c.getContext('2d').drawImage(img, 0, 0, width, height);
+          userData.customPhotoDataUrl = c.toDataURL('image/jpeg', 0.85);
+          refreshBackgroundImages();
+          persistAll('Photo saved locally');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* =========================================================================
+       4. APPLY APPEARANCE & GLASS GLOSSINESS SCALING (10% AIRY -> 100% GLOSSY)
+       ========================================================================= */
+    function applyAppearance() {
+      // Normalize 10..100 -> 0..1
+      const norm = Math.max(0, Math.min(1, (settings.glassGlossiness - 10) / 90));
+
+      const blurPx = (4 + norm * 18).toFixed(1);          // 4px -> 22px
+      const satPct = Math.round(125 + norm * 65);         // 125% -> 190%
+      const g1 = (0.22 + norm * 0.40).toFixed(2);         // 0.22 -> 0.62
+      const g2 = (0.14 + norm * 0.14).toFixed(2);         // 0.14 -> 0.28
+      const g3 = (0.18 + norm * 0.26).toFixed(2);         // 0.18 -> 0.44
+      const borderA = (0.34 + norm * 0.40).toFixed(2);    // 0.34 -> 0.74
+      const insetTop = (0.45 + norm * 0.45).toFixed(2);   // 0.45 -> 0.90
+      const insetBot = (0.12 + norm * 0.18).toFixed(2);   // 0.12 -> 0.30
+      const wash = (0.05 + norm * 0.11).toFixed(2);       // 0.05 -> 0.16
+
+      const root = document.documentElement.style;
+      root.setProperty('--glass-blur', `${blurPx}px`);
+      root.setProperty('--glass-sat', `${satPct}%`);
+      root.setProperty('--glass-g1', g1);
+      root.setProperty('--glass-g2', g2);
+      root.setProperty('--glass-g3', g3);
+      root.setProperty('--glass-border', borderA);
+      root.setProperty('--glass-inset-top', insetTop);
+      root.setProperty('--glass-inset-bot', insetBot);
+      root.setProperty('--wash-opacity', wash);
+      root.setProperty('--photo-pos', settings.photoPosition);
+
+      document.getElementById('poster-photo-img').style.objectPosition = settings.photoPosition;
+      document.getElementById('gloss-slider').value = settings.glassGlossiness;
+      document.getElementById('gloss-value-label').textContent = `${settings.glassGlossiness}%`;
+
+      // Full-Screen vs Poster Top
+      const fsWrap = document.getElementById('bg-fullscreen-wrap');
+      const fsWash = document.getElementById('bg-wash-layer');
+      const posterSec = document.getElementById('poster-top-section');
+      const btnFs = document.getElementById('mode-fullscreen');
+      const btnPoster = document.getElementById('mode-poster');
+
+      if (settings.layoutMode === 'fullscreen') {
+        fsWrap.classList.remove('hidden');
+        fsWash.classList.remove('hidden');
+        posterSec.classList.add('hidden');
+        btnFs.className = 'py-1.5 rounded-lg font-semibold transition bg-white text-rose-900 shadow-sm';
+        btnPoster.className = 'py-1.5 rounded-lg font-semibold transition text-rose-700 hover:text-rose-950';
+      } else {
+        fsWrap.classList.add('hidden');
+        fsWash.classList.add('hidden');
+        posterSec.classList.remove('hidden');
+        btnPoster.className = 'py-1.5 rounded-lg font-semibold transition bg-white text-rose-900 shadow-sm';
+        btnFs.className = 'py-1.5 rounded-lg font-semibold transition text-rose-700 hover:text-rose-950';
+      }
+
+      // Photo Position
+      document.querySelectorAll('.pos-btn').forEach(btn => {
+        const active = btn.dataset.pos === settings.photoPosition;
+        btn.className = active
+          ? 'pos-btn py-1.5 rounded-lg font-semibold transition bg-white text-stone-900 shadow-sm'
+          : 'pos-btn py-1.5 rounded-lg font-semibold transition text-stone-600 hover:text-stone-900';
+      });
+
+      // View Mode
+      const yearView = document.getElementById('full-year-view');
+      const monthView = document.getElementById('month-focus-view');
+      const btnYear = document.getElementById('view-year');
+      const btnMonth = document.getElementById('view-month');
+
+      if (settings.viewMode === 'year') {
+        yearView.classList.remove('hidden');
+        monthView.classList.add('hidden');
+        btnYear.className = 'py-1.5 rounded-lg font-semibold transition bg-white text-purple-950 shadow-sm';
+        btnMonth.className = 'py-1.5 rounded-lg font-semibold transition text-purple-700 hover:text-purple-950';
+      } else {
+        yearView.classList.add('hidden');
+        monthView.classList.remove('hidden');
+        btnMonth.className = 'py-1.5 rounded-lg font-semibold transition bg-white text-purple-950 shadow-sm';
+        btnYear.className = 'py-1.5 rounded-lg font-semibold transition text-purple-700 hover:text-purple-950';
+        renderMonthFocus();
+      }
+
+      // Toggles
+      syncSwitch('toggle-countdown', 'toggle-countdown-knob', settings.showCountdown);
+      renderNextCountdownPill();
+
+      syncSwitch('toggle-ambient', 'toggle-ambient-knob', settings.ambientParticles);
+      updateAmbientAnimation();
+    }
+
+    function syncSwitch(btnId, knobId, isOn) {
+      const btn = document.getElementById(btnId);
+      const knob = document.getElementById(knobId);
+      btn.setAttribute('aria-checked', String(isOn));
+      if (isOn) {
+        btn.classList.remove('bg-stone-300');
+        btn.classList.add('bg-rose-500');
+        knob.classList.remove('translate-x-1');
+        knob.classList.add('translate-x-4');
+      } else {
+        btn.classList.add('bg-stone-300');
+        btn.classList.remove('bg-rose-500');
+        knob.classList.add('translate-x-1');
+        knob.classList.remove('translate-x-4');
+      }
+    }
+
+    /* =========================================================================
+       5. RENDER NEXT SPECIAL DAY COUNTDOWN & BOTTOM LEGEND
+       ========================================================================= */
+    function renderNextCountdownPill() {
+      const wrap = document.getElementById('next-countdown-wrap');
+      if (!settings.showCountdown) {
+        wrap.innerHTML = '';
+        return;
+      }
+
+      const all = getAllMilestonesSorted();
+      const upcoming = all.find(m => getDaysDiff(m.key) >= 0) || all[0];
+      if (!upcoming) {
+        wrap.innerHTML = '';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <button type="button" onclick="jumpToDate('${upcoming.key}')" class="liquid-glass rounded-full px-4 py-1.5 text-xs font-semibold text-stone-900 crisp-text inline-flex items-center gap-2 hover:scale-[1.03] transition cursor-pointer">
+          <span>${upcoming.icon}</span>
+          <span>Next: <strong class="text-rose-800">${escapeHtml(upcoming.title)}</strong></span>
+          <span class="px-2 py-0.5 rounded-full bg-white/80 text-rose-700 font-bold text-[11px]" style="text-shadow:none;">${getCountdownText(upcoming.key)}</span>
+        </button>
+      `;
+    }
+
+    function renderBottomLegend() {
+      const legend = document.getElementById('bottom-legend');
+      const all = getAllMilestonesSorted();
+
+      legend.innerHTML = all.map((m, idx) => `
+        ${idx > 0 ? '<span class="text-stone-600/70 hidden sm:inline" aria-hidden="true">&bull;</span>' : ''}
+        <button type="button" onclick="jumpToDate('${m.key}')" class="inline-flex items-center gap-1.5 hover:text-rose-700 transition cursor-pointer">
+          <span aria-hidden="true">${m.icon}</span>
+          <span>${formatShortDate(m.key)}: ${escapeHtml(m.title)}</span>
+        </button>
+      `).join('');
+    }
+
+    /* =========================================================================
+       6. RENDER 2027 FULL-YEAR CALENDAR (SUNDAY TO SATURDAY)
+       ========================================================================= */
+    function renderFullYearCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+
+      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        const card = document.createElement('article');
+        card.className = 'liquid-glass liquid-glass-card rounded-3xl p-4 sm:p-5 flex flex-col';
+
+        let html = `
+          <div class="flex items-center justify-center mb-3 pb-2 border-b border-white/55">
+            <button type="button" onclick="openMonthFocus(${monthIndex})" class="font-serif text-lg sm:text-xl font-bold tracking-[0.12em] text-[#1c1917] crisp-text hover:text-rose-700 transition cursor-pointer" title="Open ${MONTH_TITLE_CASE[monthIndex]} Focus View">
+              ${MONTH_NAMES[monthIndex]}
+            </button>
+          </div>
+        `;
+
+        html += `
+          <div class="grid grid-cols-7 gap-1 text-center mb-1.5">
+            ${WEEKDAYS_3.map((w, idx) => `
+              <div class="text-[10px] font-bold crisp-text ${idx === 0 ? 'text-[#c81e3a]' : 'text-[#1c1917]'}">${w}</div>
+            `).join('')}
+          </div>
+        `;
+
+        const firstDay = new Date(YEAR, monthIndex, 1).getDay();
+        const daysInMonth = new Date(YEAR, monthIndex + 1, 0).getDate();
+
+        html += '<div class="grid grid-cols-7 gap-1 text-center">';
+
+        for (let b = 0; b < firstDay; b++) {
+          html += '<div class="h-9"></div>';
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateObj = new Date(YEAR, monthIndex, day);
+          const isSunday = dateObj.getDay() === 0;
+          const dateKey = formatDateKey(YEAR, monthIndex, day);
+          const holidayName = HOLIDAYS_2027[dateKey] || null;
+          const milestone = getMilestone(dateKey);
+          const sticker = userData.stickers[dateKey] || '';
+          const hasNote = Boolean(userData.notes[dateKey] && userData.notes[dateKey].trim());
+
+          const tips = [];
+          if (milestone) tips.push(milestone.title);
+          if (holidayName) tips.push(holidayName);
+          if (sticker) tips.push(`Tag: ${sticker}`);
+          if (hasNote) tips.push('Note saved');
+          const titleAttr = tips.length ? `title="${escapeHtml(tips.join(' • '))}"` : '';
+
+          let classes = 'relative h-9 rounded-xl flex flex-col items-center justify-center text-[13px] font-semibold transition duration-150 cursor-pointer select-none ';
+          if (milestone) {
+            classes += `${milestone.cellClass} ${milestone.textClass} font-bold hover:scale-110 `;
+          } else if (isSunday || holidayName) {
+            classes += 'text-[#c81e3a] crisp-text font-bold hover:bg-white/70 hover:scale-105 ';
+          } else {
+            classes += 'text-[#1c1917] crisp-text font-semibold hover:bg-white/70 hover:scale-105 ';
+          }
+
+          const noteDot = hasNote
+            ? '<span class="w-1.5 h-1.5 rounded-full bg-purple-600 ring-1 ring-white absolute top-0.5 right-0.5"></span>'
+            : '';
+
+          const stickerBadge = (!milestone && sticker)
+            ? `<span class="text-[9px] leading-none absolute -top-0.5 left-0.5">${sticker}</span>`
+            : '';
+
+          const holidayDot = (holidayName && !milestone)
+            ? '<span class="w-1 h-1 rounded-full bg-red-600 absolute bottom-0.5"></span>'
+            : '';
+
+          const milestoneIcon = milestone
+            ? `<span class="text-[11px] leading-none -mt-0.5" aria-hidden="true">${milestone.icon}</span>`
+            : '';
+
+          html += `
+            <button
+              type="button"
+              id="cell-${dateKey}"
+              onclick="openDateModal('${dateKey}')"
+              class="${classes}"
+              ${titleAttr}
+            >
+              ${stickerBadge}
+              ${noteDot}
+              <span class="${milestone ? 'text-[10px] leading-none' : ''}">${day}</span>
+              ${milestoneIcon}
+              ${holidayDot}
+            </button>
+          `;
+        }
+
+        html += '</div>';
+        card.innerHTML = html;
+        grid.appendChild(card);
+      }
+    }
+
+    /* =========================================================================
+       7. RENDER FIXED MONTHLY FOCUS VIEW (DESKTOP & MOBILE)
+       ========================================================================= */
+    function renderMonthFocus() {
+      const m = settings.focusMonth;
+      document.getElementById('focus-month-title').textContent = `${MONTH_TITLE_CASE[m]} ${YEAR}`;
+
+      // 12-Month Quick-Jump Pills
+      const pills = document.getElementById('focus-month-pills');
+      pills.innerHTML = SHORT_MONTHS.map((label, idx) => `
+        <button
+          type="button"
+          onclick="openMonthFocus(${idx})"
+          class="flex-shrink-0 px-3 py-1 rounded-xl text-xs font-semibold transition cursor-pointer ${
+            idx === m
+              ? 'bg-rose-500 text-white shadow-sm'
+              : 'bg-white/75 text-stone-800 hover:bg-white'
+          }"
+        >
+          ${label}
+        </button>
+      `).join('');
+
+      const grid = document.getElementById('focus-days-grid');
+      grid.innerHTML = '';
+
+      const firstDay = new Date(YEAR, m, 1).getDay();
+      const daysInMonth = new Date(YEAR, m + 1, 0).getDate();
+      const monthHighlights = [];
+
+      // Leading blank cells
+      for (let b = 0; b < firstDay; b++) {
+        grid.innerHTML += '<div class="month-day-cell rounded-xl md:rounded-2xl bg-white/15"></div>';
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateObj = new Date(YEAR, m, day);
+        const isSunday = dateObj.getDay() === 0;
+        const dateKey = formatDateKey(YEAR, m, day);
+        const holidayName = HOLIDAYS_2027[dateKey] || null;
+        const milestone = getMilestone(dateKey);
+        const sticker = userData.stickers[dateKey] || '';
+        const noteText = userData.notes[dateKey] ? userData.notes[dateKey].trim() : '';
+
+        // Collect items for mobile highlights list
+        if (milestone || holidayName || noteText || sticker) {
+          monthHighlights.push({ dateKey, day, milestone, holidayName, noteText, sticker });
+        }
+
+        let boxClass = 'month-day-cell rounded-xl md:rounded-2xl p-1 md:p-2 flex flex-col justify-between text-left transition cursor-pointer border ';
+        if (milestone) {
+          boxClass += `${milestone.cellClass} hover:scale-[1.02] `;
+        } else if (isSunday || holidayName) {
+          boxClass += 'bg-red-50/70 border-red-200/80 hover:bg-red-50/95 ';
+        } else {
+          boxClass += 'bg-white/65 border-white/80 hover:bg-white/90 ';
+        }
+
+        const numColor = milestone
+          ? milestone.textClass
+          : (isSunday || holidayName ? 'text-[#c81e3a]' : 'text-[#1c1917]');
+
+        grid.innerHTML += `
+          <button type="button" id="focus-cell-${dateKey}" onclick="openDateModal('${dateKey}')" class="${boxClass}">
+            <!-- Top Row: Date Number (Top-Left) + Sticker / Milestone Icon (Top-Right) -->
+            <div class="flex items-start justify-between w-full gap-0.5">
+              <span class="text-xs sm:text-sm md:text-base font-bold leading-none crisp-text ${numColor}">${day}</span>
+              <div class="flex items-center gap-0.5 flex-shrink-0">
+                ${sticker ? `<span class="text-[11px] md:text-xs leading-none">${sticker}</span>` : ''}
+                ${milestone ? `<span class="text-xs md:text-base leading-none">${milestone.icon}</span>` : ''}
+              </div>
+            </div>
+
+            <!-- Mobile Compact Indicator Dots (< 768px) -->
+            <div class="flex md:hidden items-center justify-center gap-1 mt-auto pt-1">
+              ${holidayName && !milestone ? '<span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>' : ''}
+              ${noteText ? '<span class="w-1.5 h-1.5 rounded-full bg-purple-600"></span>' : ''}
+            </div>
+
+            <!-- Desktop Truncated Badges (>= 768px) -->
+            <div class="hidden md:flex flex-col gap-0.5 mt-1 w-full min-w-0 overflow-hidden">
+              ${milestone ? `<p class="text-[11px] font-bold ${milestone.textClass} truncate">${escapeHtml(milestone.title)}</p>` : ''}
+              ${holidayName ? `<p class="text-[10px] font-semibold text-red-600 truncate">${holidayName}</p>` : ''}
+              ${noteText ? `<p class="text-[10px] text-purple-900 bg-purple-100/90 rounded px-1 truncate">${escapeHtml(noteText)}</p>` : ''}
+            </div>
+          </button>
+        `;
+      }
+
+      // Render Mobile "This Month's Highlights & Notes" List
+      const mobileList = document.getElementById('mobile-month-highlights');
+      if (!monthHighlights.length) {
+        mobileList.innerHTML = `
+          <p class="text-xs font-semibold text-stone-700 crisp-text text-center py-2">
+            Tap any date above to add a note, sticker, or milestone.
+          </p>
+        `;
+      } else {
+        mobileList.innerHTML = `
+          <h3 class="text-xs font-bold uppercase tracking-wider text-stone-800 crisp-text mb-2">
+            This Month's Highlights &amp; Notes
+          </h3>
+          <div class="space-y-1.5">
+            ${monthHighlights.map(item => `
+              <button
+                type="button"
+                onclick="openDateModal('${item.dateKey}')"
+                class="w-full text-left px-3 py-2 rounded-2xl bg-white/80 hover:bg-white border border-white/85 shadow-sm flex items-center gap-2.5 transition cursor-pointer"
+              >
+                <span class="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200/70 flex items-center justify-center text-xs font-bold text-rose-800 flex-shrink-0">
+                  ${item.day}
+                </span>
+                <div class="flex-1 min-w-0">
+                  ${item.milestone ? `<p class="text-xs font-bold ${item.milestone.textClass} truncate">${item.milestone.icon} ${escapeHtml(item.milestone.title)}</p>` : ''}
+                  ${item.holidayName ? `<p class="text-xs font-semibold text-red-600 truncate">${item.holidayName}</p>` : ''}
+                  ${item.noteText ? `<p class="text-[11px] text-purple-900 truncate">${item.sticker ? item.sticker + ' ' : '📝 '}${escapeHtml(item.noteText)}</p>` : (item.sticker && !item.milestone && !item.holidayName ? `<p class="text-xs text-stone-700">${item.sticker} Tagged date</p>` : '')}
+                </div>
+              </button>
+            `).join('')}
+          </div>
+        `;
+      }
+    }
+
+    function openMonthFocus(monthIndex) {
+      settings.focusMonth = monthIndex;
+      settings.viewMode = 'month';
+      persistAll(null);
+      applyAppearance();
+    }
+
+    /* =========================================================================
+       8. INTERACTIVE DATE MODAL (STICKERS, AUTO-SAVE NOTES, CUSTOM MILESTONES)
+       ========================================================================= */
+    function openDateModal(dateKey) {
+      selectedDateKey = dateKey;
+      const dateObj = parseDateKey(dateKey);
+      const isSunday = dateObj.getDay() === 0;
+      const holidayName = HOLIDAYS_2027[dateKey] || null;
+      const milestone = getMilestone(dateKey);
+
+      if (milestone) {
+        launchCelebration(milestone.confettiColors, milestone.confettiShape);
+      }
+
+      document.getElementById('modal-weekday').textContent = WEEKDAYS_FULL[dateObj.getDay()];
+      document.getElementById('modal-countdown-badge').textContent = getCountdownText(dateKey);
+      document.getElementById('modal-date-title').textContent = `${MONTH_TITLE_CASE[dateObj.getMonth()]} ${dateObj.getDate()}, ${YEAR}`;
+
+      renderModalBadges(dateKey, milestone, holidayName, isSunday);
+      renderStickerPicker(dateKey);
+
+      document.getElementById('modal-note-input').value = userData.notes[dateKey] || '';
+
+      const customSec = document.getElementById('custom-milestone-section');
+      const isDefault = Boolean(DEFAULT_MILESTONES[dateKey]);
+      customSec.classList.toggle('hidden', isDefault);
+
+      if (!isDefault) {
+        const existingCustom = userData.customMilestones[dateKey];
+        document.getElementById('milestone-emoji-input').value = existingCustom ? existingCustom.icon : '💖';
+        document.getElementById('milestone-title-input').value = existingCustom ? existingCustom.title : '';
+        document.getElementById('btn-remove-milestone').classList.toggle('hidden', !existingCustom);
+      }
+
+      const modal = document.getElementById('date-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function renderModalBadges(dateKey, milestone, holidayName, isSunday) {
+      const badges = document.getElementById('modal-badges');
+      badges.innerHTML = '';
+
+      if (milestone) {
+        badges.innerHTML += `
+          <div class="p-3 rounded-2xl border ${milestone.bannerBg} flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="text-3xl">${milestone.icon}</span>
+              <div>
+                <p class="font-serif text-lg font-bold ${milestone.textClass}">${escapeHtml(milestone.title)}</p>
+                <p class="text-xs text-stone-600">${escapeHtml(milestone.subtitle)}</p>
+              </div>
+            </div>
+            <button type="button" onclick="replayMilestoneBurst('${dateKey}')" class="px-2.5 py-1.5 rounded-xl bg-white/90 hover:bg-white text-sm shadow-sm transition cursor-pointer" title="Celebrate again">
+              🎉
+            </button>
+          </div>
+        `;
+      }
+
+      if (holidayName) {
+        badges.innerHTML += `
+          <div class="px-3.5 py-2 rounded-2xl bg-red-50/90 border border-red-200 flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-600 flex-shrink-0"></span>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-red-700">Kerala / India Public Holiday</p>
+              <p class="text-sm font-semibold text-stone-800">${holidayName}</p>
+            </div>
+          </div>
+        `;
+      }
+
+      if (isSunday) {
+        badges.innerHTML += `
+          <span class="inline-flex items-center px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-200/70 text-xs font-semibold">
+            Sunday
+          </span>
+        `;
+      }
+    }
+
+    function renderStickerPicker(dateKey) {
+      const activeSticker = userData.stickers[dateKey] || '';
+      const picker = document.getElementById('sticker-picker');
+      picker.innerHTML = STICKERS.map(s => {
+        const isSelected = activeSticker === s.id;
+        return `
+          <button
+            type="button"
+            onclick="selectSticker('${s.id}')"
+            class="px-2.5 py-1 rounded-xl text-xs font-semibold border transition cursor-pointer flex items-center gap-1 ${
+              isSelected
+                ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
+                : 'bg-white/80 hover:bg-rose-50 text-stone-700 border-rose-200/70'
+            }"
+          >
+            <span>${s.emoji}</span>
+            <span>${s.label}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectSticker(stickerId) {
+      if (!selectedDateKey) return;
+      if (stickerId) {
+        userData.stickers[selectedDateKey] = stickerId;
+      } else {
+        delete userData.stickers[selectedDateKey];
+      }
+      renderStickerPicker(selectedDateKey);
+      renderFullYearCalendar();
+      if (settings.viewMode === 'month') renderMonthFocus();
+      persistAll('Saved locally');
+    }
+
+    let noteSaveTimer = null;
+    function handleNoteInput() {
+      if (!selectedDateKey) return;
+      const val = document.getElementById('modal-note-input').value;
+      if (val.trim()) {
+        userData.notes[selectedDateKey] = val;
+      } else {
+        delete userData.notes[selectedDateKey];
+      }
+      clearTimeout(noteSaveTimer);
+      noteSaveTimer = setTimeout(() => {
+        renderFullYearCalendar();
+        if (settings.viewMode === 'month') renderMonthFocus();
+        persistAll('Saved locally');
+      }, 450);
+    }
+
+    function saveCustomMilestone() {
+      if (!selectedDateKey || DEFAULT_MILESTONES[selectedDateKey]) return;
+      const emoji = document.getElementById('milestone-emoji-input').value.trim() || '💖';
+      const title = document.getElementById('milestone-title-input').value.trim();
+      if (!title) {
+        showToast('Please enter a milestone title');
+        return;
+      }
+      userData.customMilestones[selectedDateKey] = { icon: emoji, title };
+      persistAll('Milestone pinned!');
+      refreshAllCalendarViews();
+      openDateModal(selectedDateKey);
+    }
+
+    function removeCustomMilestone() {
+      if (!selectedDateKey) return;
+      delete userData.customMilestones[selectedDateKey];
+      persistAll('Milestone removed');
+      refreshAllCalendarViews();
+      openDateModal(selectedDateKey);
+    }
+
+    function replayMilestoneBurst(dateKey) {
+      const m = getMilestone(dateKey);
+      if (m) launchCelebration(m.confettiColors, m.confettiShape);
+    }
+
+    function closeDateModal() {
+      const modal = document.getElementById('date-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      selectedDateKey = null;
+    }
+
+    function refreshAllCalendarViews() {
+      renderFullYearCalendar();
+      if (settings.viewMode === 'month') renderMonthFocus();
+      renderBottomLegend();
+      renderNextCountdownPill();
+    }
+
+    function jumpToDate(dateKey) {
+      closeDirectoryDrawer();
+      const d = parseDateKey(dateKey);
+      if (settings.viewMode === 'month') {
+        settings.focusMonth = d.getMonth();
+        renderMonthFocus();
+      }
+      const targetId = settings.viewMode === 'year' ? `cell-${dateKey}` : `focus-cell-${dateKey}`;
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.remove('date-pulse');
+        void el.offsetWidth;
+        el.classList.add('date-pulse');
+      }
+      setTimeout(() => openDateModal(dateKey), 360);
+    }
+
+    /* =========================================================================
+       9. EVENTS & NOTES DIRECTORY DRAWER
+       ========================================================================= */
+    function openDirectoryDrawer() {
+      setPopoverOpen(false);
+      document.getElementById('directory-drawer-backdrop').classList.remove('hidden');
+      renderDirectoryList();
+    }
+
+    function closeDirectoryDrawer() {
+      document.getElementById('directory-drawer-backdrop').classList.add('hidden');
+    }
+
+    function renderDirectoryList() {
+      const q = document.getElementById('directory-search').value.trim().toLowerCase();
+      const list = document.getElementById('directory-list');
+      const items = [];
+
+      if (directoryFilter === 'all' || directoryFilter === 'milestones') {
+        getAllMilestonesSorted().forEach(m => {
+          items.push({
+            key: m.key,
+            type: 'Milestone',
+            icon: m.icon,
+            title: m.title,
+            sub: formatShortDate(m.key) + ' • ' + getCountdownText(m.key),
+            badgeClass: 'bg-rose-100 text-rose-800'
+          });
+        });
+      }
+
+      if (directoryFilter === 'all' || directoryFilter === 'notes') {
+        const noteKeys = new Set([...Object.keys(userData.notes), ...Object.keys(userData.stickers)]);
+        Array.from(noteKeys).sort().forEach(k => {
+          const txt = userData.notes[k] ? userData.notes[k].trim() : '';
+          const st = userData.stickers[k] || '';
+          if (!txt && !st) return;
+          items.push({
+            key: k,
+            type: 'Note',
+            icon: st || '📝',
+            title: txt || `Tagged ${st}`,
+            sub: formatShortDate(k),
+            badgeClass: 'bg-purple-100 text-purple-800'
+          });
+        });
+      }
+
+      if (directoryFilter === 'all' || directoryFilter === 'holidays') {
+        Object.keys(HOLIDAYS_2027).sort().forEach(k => {
+          items.push({
+            key: k,
+            type: 'Holiday',
+            icon: '📅',
+            title: HOLIDAYS_2027[k],
+            sub: formatShortDate(k),
+            badgeClass: 'bg-red-100 text-red-700'
+          });
+        });
+      }
+
+      const filtered = items.filter(it =>
+        !q ||
+        it.title.toLowerCase().includes(q) ||
+        it.sub.toLowerCase().includes(q) ||
+        it.type.toLowerCase().includes(q)
+      );
+
+      if (!filtered.length) {
+        list.innerHTML = `<p class="text-center text-xs text-stone-500 py-8">No matching events or notes found.</p>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(it => `
+        <button type="button" onclick="jumpToDate('${it.key}')" class="w-full text-left p-3 rounded-2xl bg-white/75 hover:bg-white border border-white/80 shadow-sm transition flex items-start gap-2.5 cursor-pointer">
+          <span class="text-lg leading-none mt-0.5">${it.icon}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-xs font-bold text-stone-900 truncate">${escapeHtml(it.title)}</p>
+              <span class="px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${it.badgeClass} flex-shrink-0">${it.type}</span>
+            </div>
+            <p class="text-[11px] text-stone-500 mt-0.5">${it.sub}</p>
+          </div>
+        </button>
+      `).join('');
+    }
+
+    /* =========================================================================
+       10. EXPORT / IMPORT JSON BACKUP
+       ========================================================================= */
+    function exportBackupJson() {
+      const payload = { settings, userData };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '2027-couple-calendar-backup.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Backup downloaded!');
+    }
+
+    function importBackupJson(file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          if (typeof parsed !== 'object' || parsed === null) throw new Error('Invalid JSON');
+          if (parsed.settings) settings = { ...settings, ...parsed.settings };
+          if (parsed.userData) {
+            userData = {
+              customPhotoDataUrl: parsed.userData.customPhotoDataUrl || null,
+              notes: parsed.userData.notes || {},
+              stickers: parsed.userData.stickers || {},
+              customMilestones: parsed.userData.customMilestones || {}
+            };
+          } else if (parsed.notes || parsed.stickers || parsed.customMilestones) {
+            userData = {
+              customPhotoDataUrl: parsed.customPhotoDataUrl || null,
+              notes: parsed.notes || {},
+              stickers: parsed.stickers || {},
+              customMilestones: parsed.customMilestones || {}
+            };
+          }
+          persistAll('Backup restored!');
+          refreshBackgroundImages();
+          refreshAllCalendarViews();
+          applyAppearance();
+        } catch (err) {
+          showToast('Invalid backup file');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* =========================================================================
+       11. AMBIENT FLOATING HEARTS / PETALS & CELEBRATION CONFETTI
+       ========================================================================= */
+    const ambientCanvas = document.getElementById('ambient-canvas');
+    const aCtx = ambientCanvas.getContext('2d');
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const cCtx = confettiCanvas.getContext('2d');
+    let ambientItems = [];
+    let ambientFrame = null;
+    let particles = [];
+    let confettiFrame = null;
+
+    function resizeCanvases() {
+      ambientCanvas.width = window.innerWidth;
+      ambientCanvas.height = window.innerHeight;
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    }
+
+    function initAmbientItems() {
+      ambientItems = [];
+      const colors = ['rgba(244,114,182,0.45)', 'rgba(251,113,133,0.42)', 'rgba(255,255,255,0.65)', 'rgba(216,180,254,0.45)'];
+      for (let i = 0; i < 24; i++) {
+        ambientItems.push({
+          x: Math.random() * window.innerWidth,
+          y: Math.random() * window.innerHeight,
+          size: 7 + Math.random() * 9,
+          vy: 0.35 + Math.random() * 0.65,
+          vx: (Math.random() - 0.5) * 0.4,
+          rot: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 0.015,
+          color: colors[i % colors.length],
+          isHeart: i % 2 === 0
+        });
+      }
+    }
+
+    function animateAmbient() {
+      if (!settings.ambientParticles) {
+        aCtx.clearRect(0, 0, ambientCanvas.width, ambientCanvas.height);
+        ambientFrame = null;
+        return;
+      }
+      aCtx.clearRect(0, 0, ambientCanvas.width, ambientCanvas.height);
+      for (const p of ambientItems) {
+        p.y += p.vy;
+        p.x += p.vx + Math.sin(p.y * 0.01) * 0.25;
+        p.rot += p.vRot;
+        if (p.y > ambientCanvas.height + 20) {
+          p.y = -20;
+          p.x = Math.random() * ambientCanvas.width;
+        }
+        if (p.isHeart) {
+          drawHeart(aCtx, p.x, p.y, p.size, p.color, p.rot, 1);
+        } else {
+          aCtx.save();
+          aCtx.translate(p.x, p.y);
+          aCtx.rotate(p.rot);
+          aCtx.fillStyle = p.color;
+          aCtx.beginPath();
+          aCtx.ellipse(0, 0, p.size * 0.55, p.size * 0.32, 0, 0, Math.PI * 2);
+          aCtx.fill();
+          aCtx.restore();
+        }
+      }
+      ambientFrame = requestAnimationFrame(animateAmbient);
+    }
+
+    function updateAmbientAnimation() {
+      if (settings.ambientParticles) {
+        if (!ambientItems.length) initAmbientItems();
+        if (!ambientFrame) animateAmbient();
+      } else {
+        if (ambientFrame) cancelAnimationFrame(ambientFrame);
+        ambientFrame = null;
+        aCtx.clearRect(0, 0, ambientCanvas.width, ambientCanvas.height);
+      }
+    }
+
+    function drawHeart(c, x, y, size, color, rot, alpha) {
+      c.save();
+      c.translate(x, y);
+      c.rotate(rot);
+      c.globalAlpha = alpha;
+      c.fillStyle = color;
+      c.beginPath();
+      const topH = size * 0.3;
+      c.moveTo(0, topH);
+      c.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topH);
+      c.bezierCurveTo(-size / 2, (size + topH) / 2, 0, (size + topH) / 1.15, 0, size);
+      c.bezierCurveTo(0, (size + topH) / 1.15, size / 2, (size + topH) / 2, size / 2, topH);
+      c.bezierCurveTo(size / 2, 0, 0, 0, 0, topH);
+      c.closePath();
+      c.fill();
+      c.restore();
+    }
+
+    function launchCelebration(colors, shape = 'confetti') {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight * 0.38;
+      for (let i = 0; i < 75; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 3 + Math.random() * 8;
+        particles.push({
+          x: cx + (Math.random() - 0.5) * 140,
+          y: cy + (Math.random() - 0.5) * 80,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 3.5,
+          gravity: 0.16,
+          size: shape === 'heart' ? 9 + Math.random() * 9 : 6 + Math.random() * 6,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rot: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 0.2,
+          alpha: 1,
+          decay: 0.011 + Math.random() * 0.008,
+          shape: shape === 'heart' && Math.random() > 0.3 ? 'heart' : 'rect'
+        });
+      }
+      if (!confettiFrame) animateConfetti();
+    }
+
+    function animateConfetti() {
+      cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.vx *= 0.99;
+        p.rot += p.vRot;
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        if (p.shape === 'heart') {
+          drawHeart(cCtx, p.x, p.y, p.size, p.color, p.rot, p.alpha);
+        } else {
+          cCtx.save();
+          cCtx.translate(p.x, p.y);
+          cCtx.rotate(p.rot);
+          cCtx.globalAlpha = p.alpha;
+          cCtx.fillStyle = p.color;
+          cCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+          cCtx.restore();
+        }
+      }
+      if (particles.length > 0) {
+        confettiFrame = requestAnimationFrame(animateConfetti);
+      } else {
+        confettiFrame = null;
+        cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      }
+    }
+
+    /* =========================================================================
+       12. EVENT BINDINGS & BOOT
+       ========================================================================= */
+    function setPopoverOpen(open) {
+      const fab = document.getElementById('settings-fab');
+      const popover = document.getElementById('settings-popover');
+      fab.setAttribute('aria-expanded', String(open));
+      popover.classList.toggle('hidden', !open);
+    }
+
+    function initEvents() {
+      const fab = document.getElementById('settings-fab');
+      const popover = document.getElementById('settings-popover');
+
+      fab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setPopoverOpen(fab.getAttribute('aria-expanded') !== 'true');
+      });
+
+      document.getElementById('btn-close-popover').addEventListener('click', () => setPopoverOpen(false));
+
+      document.addEventListener('click', (e) => {
+        if (!popover.classList.contains('hidden') && !popover.contains(e.target) && !fab.contains(e.target)) {
+          setPopoverOpen(false);
+        }
+      });
+
+      // Background Mode
+      document.getElementById('mode-fullscreen').addEventListener('click', () => {
+        settings.layoutMode = 'fullscreen';
+        applyAppearance();
+        persistAll('Saved locally');
+      });
+      document.getElementById('mode-poster').addEventListener('click', () => {
+        settings.layoutMode = 'poster';
+        applyAppearance();
+        persistAll('Saved locally');
+      });
+
+      // Glass Glossiness Slider
+      document.getElementById('gloss-slider').addEventListener('input', (e) => {
+        settings.glassGlossiness = Number(e.target.value);
+        applyAppearance();
+      });
+      document.getElementById('gloss-slider').addEventListener('change', () => persistAll('Saved locally'));
+
+      // Photo Position
+      document.querySelectorAll('.pos-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          settings.photoPosition = btn.dataset.pos;
+          applyAppearance();
+          persistAll('Saved locally');
+        });
+      });
+
+      // Calendar View
+      document.getElementById('view-year').addEventListener('click', () => {
+        settings.viewMode = 'year';
+        applyAppearance();
+        persistAll('Saved locally');
+      });
+      document.getElementById('view-month').addEventListener('click', () => {
+        settings.viewMode = 'month';
+        applyAppearance();
+        persistAll('Saved locally');
+      });
+      document.getElementById('btn-back-year').addEventListener('click', () => {
+        settings.viewMode = 'year';
+        applyAppearance();
+        persistAll(null);
+      });
+
+      // Toggles
+      document.getElementById('toggle-countdown').addEventListener('click', () => {
+        settings.showCountdown = !settings.showCountdown;
+        applyAppearance();
+        persistAll('Saved locally');
+      });
+      document.getElementById('toggle-ambient').addEventListener('click', () => {
+        settings.ambientParticles = !settings.ambientParticles;
+        applyAppearance();
+        persistAll('Saved locally');
+      });
+
+      // Directory Drawer
+      document.getElementById('btn-open-directory').addEventListener('click', openDirectoryDrawer);
+      document.getElementById('btn-close-directory').addEventListener('click', closeDirectoryDrawer);
+      document.getElementById('directory-drawer-backdrop').addEventListener('click', (e) => {
+        if (e.target.id === 'directory-drawer-backdrop') closeDirectoryDrawer();
+      });
+      document.getElementById('directory-search').addEventListener('input', renderDirectoryList);
+      document.querySelectorAll('.dir-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          directoryFilter = btn.dataset.filter;
+          document.querySelectorAll('.dir-filter-btn').forEach(b => {
+            b.className = b === btn
+              ? 'dir-filter-btn py-1.5 rounded-lg bg-white text-rose-900 shadow-sm'
+              : 'dir-filter-btn py-1.5 rounded-lg text-stone-600';
+          });
+          renderDirectoryList();
+        });
+      });
+
+      // Photo Upload & Reset
+      const photoInput = document.getElementById('photo-upload-input');
+      document.getElementById('btn-change-photo').addEventListener('click', () => photoInput.click());
+      photoInput.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (f) processUploadedPhoto(f);
+        e.target.value = '';
+      });
+      document.getElementById('btn-reset-photo').addEventListener('click', () => {
+        userData.customPhotoDataUrl = null;
+        refreshBackgroundImages();
+        persistAll('Restored default photo');
+      });
+
+      // Export / Import JSON
+      const jsonInput = document.getElementById('json-import-input');
+      document.getElementById('btn-export-json').addEventListener('click', exportBackupJson);
+      document.getElementById('btn-import-json').addEventListener('click', () => jsonInput.click());
+      jsonInput.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (f) importBackupJson(f);
+        e.target.value = '';
+      });
+
+      // Print
+      document.getElementById('btn-print').addEventListener('click', () => {
+        setPopoverOpen(false);
+        setTimeout(() => window.print(), 120);
+      });
+
+      // Month Focus Navigation
+      document.getElementById('btn-prev-month').addEventListener('click', () => {
+        settings.focusMonth = (settings.focusMonth + 11) % 12;
+        renderMonthFocus();
+        persistAll(null);
+      });
+      document.getElementById('btn-next-month').addEventListener('click', () => {
+        settings.focusMonth = (settings.focusMonth + 1) % 12;
+        renderMonthFocus();
+        persistAll(null);
+      });
+
+      // Date Modal
+      document.getElementById('btn-close-modal').addEventListener('click', closeDateModal);
+      document.getElementById('date-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'date-modal') closeDateModal();
+      });
+      document.getElementById('modal-note-input').addEventListener('input', handleNoteInput);
+      document.getElementById('btn-save-milestone').addEventListener('click', saveCustomMilestone);
+      document.getElementById('btn-remove-milestone').addEventListener('click', removeCustomMilestone);
+
+      // Keyboard Shortcuts (Escape & Left/Right arrows in Month Focus)
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeDateModal();
+          closeDirectoryDrawer();
+          setPopoverOpen(false);
+        } else if (settings.viewMode === 'month' && !selectedDateKey) {
+          if (e.key === 'ArrowLeft') {
+            settings.focusMonth = (settings.focusMonth + 11) % 12;
+            renderMonthFocus();
+            persistAll(null);
+          } else if (e.key === 'ArrowRight') {
+            settings.focusMonth = (settings.focusMonth + 1) % 12;
+            renderMonthFocus();
+            persistAll(null);
+          }
+        }
+      });
+
+      window.addEventListener('resize', resizeCanvases);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStorage();
+      resizeCanvases();
+      initEvents();
+      refreshBackgroundImages();
+      refreshAllCalendarViews();
+      applyAppearance();
+    });
+  </script>
+</body>
+</html>
